@@ -1,0 +1,78 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String        @unique
+  passwordHash String
+  transactions Transaction[]
+}
+
+model Media {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String
+  type         MediaType
+  transactions Transaction[]
+  link         String        @unique
+  category     String[]
+  links        Link[]
+
+  @@unique([title, type])
+}
+
+model Transaction {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  borrowedAt DateTime
+  dueDate    DateTime
+  returnedAt DateTime?
+  payment    Payment
+
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mediaId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId  String
+  link    Link?
+}
+
+model Link {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  sharableLink String @unique
+
+  media         Media       @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mediaId       String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  transactionId String      @unique
+
+  @@unique([mediaId, transactionId])
+}
+
+enum MediaType {
+  MOVIE
+  MUSIC
+  BOOK
+}
+
+type Payment {
+  amount    Float
+  createdAt DateTime      @default(now())
+  method    PaymentMethod
+  status    PaymentStatus
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+enum PaymentMethod {
+  DEBIT_CARD
+  CREDIT_CARD
+}
