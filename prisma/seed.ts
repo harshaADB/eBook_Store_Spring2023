@@ -30,28 +30,12 @@ async function seed() {
 			{
 				title: 'The Matrix',
 				description: 'A movie about a hacker',
-				type: MediaType.EBOOK,
+				type: MediaType.BOOK,
 				link: 'https://www.africau.edu/images/default/sample.pdf',
 				rentPerDay: 3,
 				category: {
 					set: ['Action', 'Sci-Fi'],
 				},
-				canBeRented: true,
-				subscriptionFeePerDay: 0,
-				canBeSubscribed: false,
-			},
-			{
-				title: 'The Vogue',
-				description: 'A movie about a hacker',
-				type: MediaType.EMAGAZINE,
-				link: 'https://www.africau.edu/images/default/sample.pdf',
-				rentPerDay: 3,
-				category: {
-					set: ['Action', 'Sci-Fi'],
-				},
-				canBeRented: false,
-				subscriptionFeePerDay: 3,
-				canBeSubscribed: true,
 			},
 		],
 	})

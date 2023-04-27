@@ -1,9 +1,9 @@
 const siteConfig = {
-	appName: 'eStore Application',
+	appName: 'eBook Store',
 	noOfDaysToReturn: 7,
 	publicLinks: [{name: 'Library', href: '/library'}],
 	navigationLinks: [
-		{name: 'Home', href: '/'},
+		{name: 'Rental History', href: '/'},
 		{name: 'Payment History', href: '/payment-history'},
 	],
 	adminLinks: [

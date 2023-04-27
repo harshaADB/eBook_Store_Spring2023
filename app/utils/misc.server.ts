@@ -1,6 +1,6 @@
 import {json} from '@remix-run/node'
 
-const DEFAULT_REDIRECT = '/'
+const DEFAULT_REDIRECT = '/library'
 
 export const badRequest = <T = any>(data: T) => json<T>(data, {status: 400})
 export const unauthorized = <T = any>(data: T) => json<T>(data, {status: 401})

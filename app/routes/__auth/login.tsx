@@ -62,20 +62,6 @@ export default function Login() {
 			<fetcher.Form method="post" replace className="mt-8">
 				<input type="hidden" name="redirectTo" value={redirectTo} />
 
-				{/* <SegmentedControl
-          name='role'
-          fullWidth
-          value={role}
-          onChange={(e) => setRole(e as UserRole)}
-          data={Object.values(UserRole)
-            .reverse()
-            .map((role) => ({
-              label: role.charAt(0).toUpperCase() + role.slice(1),
-              value: role,
-            }))}
-          mb={16}
-        /> */}
-
 				<fieldset disabled={isSubmitting} className="flex flex-col gap-4">
 					<TextInput
 						name="email"

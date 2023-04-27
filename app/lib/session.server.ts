@@ -88,7 +88,7 @@ export async function createUserSession({
 	session.set(USER_SESSION_KEY, userId)
 	session.set(USER_ROLE_KEY, role)
 
-	return redirect(redirectTo, {
+	return redirect('/library', {
 		headers: {
 			'Set-Cookie': await sessionStorage.commitSession(session, {
 				maxAge: remember ? fourteenDaysInSeconds : thirtyDaysInSeconds,

@@ -19,7 +19,6 @@ import * as React from 'react'
 import {db} from '~/lib/prisma.server'
 import {ManageMediaSchema} from '~/lib/zod.schema'
 import {useDashboardData} from '~/utils/hooks'
-import {formatCurrency} from '~/utils/misc'
 import {badRequest} from '~/utils/misc.server'
 import {formatList, titleCase} from '~/utils/string'
 import type {inferErrors} from '~/utils/validation'
@@ -124,7 +123,7 @@ export default function ManageMedia() {
 											scope="col"
 											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900"
 										>
-											Media Type
+											Type
 										</th>
 										<th
 											scope="col"
@@ -134,21 +133,9 @@ export default function ManageMedia() {
 										</th>
 										<th
 											scope="col"
-											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900"
-										>
-											Subscription / day
-										</th>
-										<th
-											scope="col"
 											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell"
 										>
 											Category
-										</th>
-										<th
-											scope="col"
-											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell"
-										>
-											Transaction type
 										</th>
 										<th
 											scope="col"
@@ -168,20 +155,10 @@ export default function ManageMedia() {
 												{media.type}
 											</td>
 											<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500">
-												{media.canBeRented
-													? formatCurrency(media.rentPerDay)
-													: '-'}
-											</td>
-											<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500">
-												{media.canBeSubscribed
-													? formatCurrency(media.subscriptionFeePerDay)
-													: '-'}
+												${media.rentPerDay.toFixed(2)}
 											</td>
 											<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500 hidden sm:table-cell">
 												{formatList(media.category)}
-											</td>
-											<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500 hidden sm:table-cell">
-												{media.canBeRented ? 'Rent' : 'Subscribe'}
 											</td>
 											<td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 md:pr-0 space-x-4">
 												<div className="flex gap-6 items-center">

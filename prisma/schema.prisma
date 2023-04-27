@@ -24,13 +24,9 @@ model Media {
   rentPerDay     Float
   type           MediaType
   transactions   Transaction[]
-  link           String
+  link           String        @unique
   category       String[]
   shareableLinks Link[]
-
-  canBeRented           Boolean
-  canBeSubscribed       Boolean
-  subscriptionFeePerDay Float
 
   @@unique([title, type])
 }
@@ -85,8 +81,7 @@ enum PaymentMethod {
 }
 
 enum MediaType {
-  EBOOK
-  EMAGAZINE
+  BOOK
 }
 
 enum Role {
