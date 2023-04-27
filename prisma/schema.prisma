@@ -24,7 +24,7 @@ model Media {
   rentPerDay     Float
   type           MediaType
   transactions   Transaction[]
-  link           String        @unique
+  link           String
   category       String[]
   shareableLinks Link[]
 

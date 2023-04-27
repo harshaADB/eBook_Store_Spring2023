@@ -106,7 +106,7 @@ export default function Library() {
 											scope="col"
 											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell"
 										>
-											Rent / day
+											Rent
 										</th>
 										<th
 											scope="col"
@@ -175,8 +175,9 @@ function MediaRow({media}: {media: Media}) {
 							<Badge color="red">Already rented</Badge>
 						) : (
 							<Button
-								variant="subtle"
+								variant="filled"
 								loading={isSubmitting}
+								compact
 								loaderPosition="right"
 								onClick={() => rentMedia(media.id)}
 							>
