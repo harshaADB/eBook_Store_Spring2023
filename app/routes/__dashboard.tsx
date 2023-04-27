@@ -16,31 +16,16 @@ import * as React from 'react'
 import siteConfig from 'site.config'
 import {getAllMedia} from '~/lib/media.server'
 import {getPaymentsByUserId} from '~/lib/payment.server'
-import {getUser} from '~/lib/session.server'
+import {getUser, requireUser} from '~/lib/session.server'
 import {getAllTransaction} from '~/lib/transaction.server'
 import {useOptionalUser} from '~/utils/hooks'
 import {cx} from '~/utils/string'
 
 export type DashboardLoaderData = SerializeFrom<typeof loader>
 export const loader = async ({request}: LoaderArgs) => {
-	const user = await getUser(request)
+	const user = await requireUser(request)
 
 	const allMedia = await getAllMedia()
-
-	if (!user) {
-		return json({
-			user: null,
-			allMedia,
-			totalFine: 0,
-			rentedMedia: [],
-			returnedMedia: [],
-			previousPayments: [],
-			totalAmountDue: 0,
-			totalAmount: 0,
-			isAdmin: false,
-		})
-	}
-
 	const allTransaction = await getAllTransaction(user.id)
 
 	const rentedMedia = allTransaction.filter(

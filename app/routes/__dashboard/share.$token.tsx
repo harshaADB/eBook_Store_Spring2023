@@ -1,8 +1,6 @@
-import {MediaType} from '@prisma/client'
 import type {LoaderArgs} from '@remix-run/node'
 import {json, redirect} from '@remix-run/node'
 import {useLoaderData} from '@remix-run/react'
-import ReactPlayer from 'react-player/youtube'
 import {requireUserId} from '~/lib/session.server'
 import {getMedia} from '~/lib/transaction.server'
 
@@ -28,10 +26,6 @@ export const loader = async ({request, params}: LoaderArgs) => {
 
 export default function ViewMedia() {
 	const {media} = useLoaderData<typeof loader>()
-
-	const isYoutubeVideo =
-		media?.type === MediaType.MOVIE || media?.type === MediaType.MUSIC
-
 	return (
 		<>
 			<div className="px-4 sm:px-6 lg:px-8 mt-8">
@@ -47,16 +41,7 @@ export default function ViewMedia() {
 				<div className="mt-8 flex flex-col">
 					<div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
 						<div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-							{isYoutubeVideo ? (
-								<ReactPlayer url={media?.link} controls />
-							) : (
-								<iframe
-									src={media?.link}
-									title="PDF"
-									height={600}
-									width={1000}
-								/>
-							)}
+							<iframe src={media?.link} title="PDF" height={600} width={1000} />
 						</div>
 					</div>
 				</div>

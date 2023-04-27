@@ -10,6 +10,7 @@ import * as React from 'react'
 import {requireUser, requireUserId} from '~/lib/session.server'
 import {rentMedia} from '~/lib/transaction.server'
 import {useDashboardData, useOptionalUser} from '~/utils/hooks'
+import {formatCurrency} from '~/utils/misc'
 import {formatList, titleCase} from '~/utils/string'
 
 export const loader = async ({request}: LoaderArgs) => {
@@ -112,6 +113,12 @@ export default function Library() {
 											scope="col"
 											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell"
 										>
+											Subscription / day
+										</th>
+										<th
+											scope="col"
+											className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell"
+										>
 											Category
 										</th>
 										<th
@@ -163,7 +170,12 @@ function MediaRow({media}: {media: Media}) {
 				{titleCase(media.type)}
 			</td>
 			<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500 hidden sm:table-cell">
-				${media.rentPerDay.toFixed(2)}
+				{media.canBeRented ? formatCurrency(media.rentPerDay) : '-'}
+			</td>
+			<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500 hidden sm:table-cell">
+				{media.canBeSubscribed
+					? formatCurrency(media.subscriptionFeePerDay)
+					: '-'}
 			</td>
 			<td className="whitespace-nowrap py-4 px-3 text-sm text-gray-500 hidden sm:table-cell">
 				{formatList(media.category)}
@@ -172,17 +184,35 @@ function MediaRow({media}: {media: Media}) {
 				{user ? (
 					<div className="flex gap-6 items-center">
 						{isRentedByUser ? (
-							<Badge color="red">Already rented</Badge>
+							<Badge color="red">
+								Already {media.canBeRented ? 'rented' : 'subscribed'}
+							</Badge>
 						) : (
-							<Button
-								variant="subtle"
-								loading={isSubmitting}
-								loaderPosition="right"
-								onClick={() => rentMedia(media.id)}
-							>
-								Rent
-								<span className="sr-only">, {media.title}</span>
-							</Button>
+							<>
+								<Button
+									variant="subtle"
+									loading={isSubmitting}
+									compact
+									loaderPosition="right"
+									disabled={!media.canBeRented}
+									onClick={() => rentMedia(media.id)}
+								>
+									Rent
+									<span className="sr-only">, {media.title}</span>
+								</Button>
+
+								<Button
+									variant="subtle"
+									loading={isSubmitting}
+									compact
+									disabled={!media.canBeSubscribed}
+									loaderPosition="right"
+									onClick={() => rentMedia(media.id)}
+								>
+									Subscribe
+									<span className="sr-only">, {media.title}</span>
+								</Button>
+							</>
 						)}
 					</div>
 				) : null}

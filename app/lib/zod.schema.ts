@@ -39,4 +39,10 @@ export const ManageMediaSchema = z.object({
 		Number,
 		z.number().min(1, 'Rent per day is required')
 	),
+	canBeRented: z.boolean(),
+	canBeSubscribed: z.boolean(),
+	subscriptionFeePerDay: z.preprocess(
+		Number,
+		z.number().min(1, 'Subscription fee per day is required')
+	),
 })

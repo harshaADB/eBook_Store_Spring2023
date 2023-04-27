@@ -153,7 +153,7 @@ export default function Dashboard() {
 				{/* Media Borrowed */}
 				<div className="px-4 mt-6 sm:px-6 lg:px-8">
 					<h2 className="text-gray-500 text-xs font-medium uppercase tracking-wide">
-						Rented Media
+						My Media
 					</h2>
 
 					<ul className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4 mt-3">
@@ -222,7 +222,7 @@ export default function Dashboard() {
 											scope="col"
 											className="py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 sm:pr-6 md:pr-0"
 										>
-											Rent Amount
+											Amount
 										</th>
 									</tr>
 								</thead>
@@ -401,6 +401,16 @@ function MediaCard({
 		)
 	}
 
+	const amount = media.media.canBeRented
+		? Math.abs(
+				dateDiffInDays(new Date(), new Date(media.borrowedAt)) *
+					media.media.rentPerDay
+		  )
+		: Math.abs(
+				dateDiffInDays(new Date(), new Date(media.borrowedAt)) *
+					media.media.subscriptionFeePerDay
+		  )
+
 	return (
 		<li className="col-span-1 flex flex-col text-left bg-white rounded-lg shadow divide-y divide-gray-200 border border-gray-100/50">
 			<div className="flex-1 flex flex-col px-8 py-4 gap-6">
@@ -417,7 +427,9 @@ function MediaCard({
 					</div>
 
 					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
-						<span className="text-gray-500 text-sm">Rent/day</span>
+						<span className="text-gray-500 text-sm">
+							{media.media.canBeRented ? 'Rent' : 'Subscription'}
+						</span>
 						<Badge color="blue" radius="md" px={4}>
 							${media.media.rentPerDay.toFixed(2)}
 						</Badge>
@@ -426,11 +438,7 @@ function MediaCard({
 					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
 						<span className="text-gray-500 text-sm">Total amount</span>
 						<Badge color="red" radius="md" px={4}>
-							$
-							{Math.abs(
-								dateDiffInDays(new Date(), new Date(media.borrowedAt)) *
-									media.media.rentPerDay
-							)}
+							{formatCurrency(amount)}
 						</Badge>
 					</div>
 
@@ -468,7 +476,7 @@ function EmptyBorrowState() {
 			<PlayCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
 			<h3 className="mt-2 text-sm font-medium text-gray-900">No media</h3>
 			<p className="mt-1 text-sm text-gray-500">
-				Get started by renting a new media
+				Get started by renting/subscribing a new media
 			</p>
 			<div className="mt-6">
 				<Link
