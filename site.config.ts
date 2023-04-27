@@ -1,4 +1,5 @@
 const siteConfig = {
+	appName: 'eStore Application',
 	noOfDaysToReturn: 7,
 	publicLinks: [{name: 'Library', href: '/library'}],
 	navigationLinks: [

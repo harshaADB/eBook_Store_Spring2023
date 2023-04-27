@@ -1,12 +1,19 @@
-/node_modules/
+# We don't want lockfiles in stacks, as people could use a different package manager
+# This part will be removed by `remix.init`
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+pnpm-lock.yml
 
-.cache
-.vercel
-.output
+node_modules
 
-/build/
+/build
 /public/build
-/api/
+.env
 
-./server/dist
-/app/styles/app.css
+/cypress/screenshots
+/cypress/videos
+/prisma/data.db
+/prisma/data.db-journal
+
+/app/styles/tailwind.css
