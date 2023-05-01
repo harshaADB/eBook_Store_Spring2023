@@ -9,6 +9,7 @@ import {useFetcher} from '@remix-run/react'
 import * as React from 'react'
 import {requireUser, requireUserId} from '~/lib/session.server'
 import {rentMedia} from '~/lib/transaction.server'
+import {useCart} from '~/utils/CartContext'
 import {useDashboardData, useOptionalUser} from '~/utils/hooks'
 import {formatList, titleCase} from '~/utils/string'
 
@@ -140,6 +141,7 @@ function MediaRow({media}: {media: Media}) {
 	const fetcher = useFetcher<typeof action>()
 	const {user} = useOptionalUser()
 	const {rentedMedia} = useDashboardData()
+	const {addItemToCart, itemsInCart} = useCart()
 
 	const rentMedia = (mediaId: Media['id']) => {
 		fetcher.submit(
@@ -179,9 +181,13 @@ function MediaRow({media}: {media: Media}) {
 								loading={isSubmitting}
 								compact
 								loaderPosition="right"
-								onClick={() => rentMedia(media.id)}
+								disabled={
+									isSubmitting || itemsInCart.some(i => i.id === media.id)
+								}
+								// onClick={() => rentMedia(media.id)}
+								onClick={() => addItemToCart(media)}
 							>
-								Rent
+								Add to cart
 								<span className="sr-only">, {media.title}</span>
 							</Button>
 						)}

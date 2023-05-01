@@ -19,6 +19,7 @@ import {
 } from '@remix-run/react'
 import {getUser} from './lib/session.server'
 import styles from './styles/app.css'
+import {CartProvider} from '~/utils/CartContext'
 
 const appendCache = createEmotionCache({key: 'mantine', prepend: false})
 
@@ -70,7 +71,9 @@ export default function App() {
 		<Document>
 			<ModalsProvider>
 				<NotificationsProvider autoClose={2000} limit={3}>
-					<Outlet />
+					<CartProvider>
+						<Outlet />
+					</CartProvider>
 				</NotificationsProvider>
 			</ModalsProvider>
 		</Document>

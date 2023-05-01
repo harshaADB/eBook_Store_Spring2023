@@ -10,3 +10,7 @@ export function formatCurrency(amount: number) {
 		currency: 'USD',
 	}).format(amount)
 }
+
+export type DateToString<T> = {
+	[P in keyof T]: T[P] extends Date ? string : T[P]
+}
