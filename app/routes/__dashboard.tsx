@@ -23,6 +23,7 @@ import {cx, titleCase} from '~/utils/string'
 import * as React from 'react'
 import {DatePicker} from '@mantine/dates'
 import ReactInputMask from 'react-input-mask'
+import {TrashIcon} from '@heroicons/react/24/solid'
 
 export type DashboardLoaderData = SerializeFrom<typeof loader>
 export const loader = async ({request}: LoaderArgs) => {
@@ -71,7 +72,7 @@ export default function DashboardLayout() {
 	const isSubmittingPayment = paymentFetcher.state !== 'idle'
 	const [isCartDrawerOpen, handleCartDrawer] = useDisclosure(false)
 	const [isPaymentModalOpen, handlePaymentModal] = useDisclosure(false)
-	const {itemsInCart, clearCart, totalRent} = useCart()
+	const {itemsInCart, clearCart, totalRent, removeItemFromCart} = useCart()
 
 	const rentMedias = (e: React.FormEvent<HTMLFormElement>) => {
 		const formData = new FormData(e.currentTarget)
@@ -229,6 +230,14 @@ export default function DashboardLayout() {
 									>
 										<p>{item.title}</p>
 										<p>{formatCurrency(item.rentPerDay)}</p>
+										<Button
+											compact
+											variant="subtle"
+											color="red"
+											onClick={() => removeItemFromCart(item.id)}
+										>
+											<TrashIcon className="w-4 h-4" />
+										</Button>
 									</li>
 								))}
 							</ul>

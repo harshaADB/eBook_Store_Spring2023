@@ -28,8 +28,38 @@ async function seed() {
 	await prisma.media.createMany({
 		data: [
 			{
-				title: 'The Matrix',
-				description: 'A movie about a hacker',
+				title: 'The Fault in Our Stars',
+				description: 'John Green - The Fault in Our Stars',
+				type: MediaType.BOOK,
+				link: 'https://www.africau.edu/images/default/sample.pdf',
+				rentPerDay: 3,
+				category: {
+					set: ['Action', 'Sci-Fi'],
+				},
+			},
+			{
+				title: 'Jungle Book',
+				description: 'Rudyard Kipling - Jungle Book',
+				type: MediaType.BOOK,
+				link: 'https://www.africau.edu/images/default/sample.pdf',
+				rentPerDay: 3,
+				category: {
+					set: ['Action', 'Sci-Fi'],
+				},
+			},
+			{
+				title: 'Good Omens',
+				description: 'Neil Gaiman - Good Omens',
+				type: MediaType.BOOK,
+				link: 'https://www.africau.edu/images/default/sample.pdf',
+				rentPerDay: 3,
+				category: {
+					set: ['Action', 'Sci-Fi'],
+				},
+			},
+			{
+				title: 'The Martian',
+				description: 'Andy Weir - The Martian',
 				type: MediaType.BOOK,
 				link: 'https://www.africau.edu/images/default/sample.pdf',
 				rentPerDay: 3,
