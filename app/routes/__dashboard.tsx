@@ -1,6 +1,6 @@
-import {Button, Drawer} from '@mantine/core'
+import {Button, Drawer, Input, Modal, NumberInput, Select} from '@mantine/core'
 import {useDisclosure} from '@mantine/hooks'
-import {PaymentStatus, Role} from '@prisma/client'
+import {PaymentMethod, PaymentStatus, Role} from '@prisma/client'
 import type {LoaderArgs, SerializeFrom} from '@remix-run/node'
 import {json} from '@remix-run/node'
 import {
@@ -15,12 +15,14 @@ import siteConfig from 'site.config'
 import {getAllMedia} from '~/lib/media.server'
 import {getPaymentsByUserId} from '~/lib/payment.server'
 import {requireUser} from '~/lib/session.server'
-import {getAllTransaction} from '~/lib/transaction.server'
+import {clearDues, getAllTransaction} from '~/lib/transaction.server'
 import {useCart} from '~/utils/CartContext'
 import {useOptionalUser, useUser} from '~/utils/hooks'
 import {formatCurrency} from '~/utils/misc'
-import {cx} from '~/utils/string'
+import {cx, titleCase} from '~/utils/string'
 import * as React from 'react'
+import {DatePicker} from '@mantine/dates'
+import ReactInputMask from 'react-input-mask'
 
 export type DashboardLoaderData = SerializeFrom<typeof loader>
 export const loader = async ({request}: LoaderArgs) => {
@@ -61,40 +63,42 @@ export const loader = async ({request}: LoaderArgs) => {
 }
 
 export default function DashboardLayout() {
+	const id = React.useId()
 	const {user} = useUser()
 	const {isAdmin} = useLoaderData<typeof loader>()
 
-	const fetcher = useFetcher()
-	const isSubmiting = fetcher.state !== 'idle'
+	const paymentFetcher = useFetcher()
+	const isSubmittingPayment = paymentFetcher.state !== 'idle'
 	const [isCartDrawerOpen, handleCartDrawer] = useDisclosure(false)
+	const [isPaymentModalOpen, handlePaymentModal] = useDisclosure(false)
+	const {itemsInCart, clearCart, totalRent} = useCart()
 
-	const {itemsInCart, clearCart} = useCart()
+	const rentMedias = (e: React.FormEvent<HTMLFormElement>) => {
+		const formData = new FormData(e.currentTarget)
 
-	const rentMedias = () => {
-		const formData = new FormData()
-
-		formData.append('userId', user.id)
 		formData.append('media[]', JSON.stringify(itemsInCart))
 
-		fetcher.submit(formData, {
+		paymentFetcher.submit(formData, {
 			method: 'POST',
 			action: '/api/transaction',
 			replace: true,
 		})
+		e.preventDefault()
 	}
 
 	React.useEffect(() => {
-		if (fetcher.type !== 'done') {
+		if (paymentFetcher.type !== 'done') {
 			return
 		}
 
-		if (!fetcher.data.success) {
+		if (!paymentFetcher.data?.success) {
 			return
 		}
 
 		handleCartDrawer.close()
+		handlePaymentModal.close()
 		clearCart()
-	}, [fetcher.data, fetcher.type])
+	}, [paymentFetcher.data, paymentFetcher.type])
 
 	return (
 		<>
@@ -254,8 +258,7 @@ export default function DashboardLayout() {
 								<Button
 									fullWidth
 									variant="filled"
-									onClick={rentMedias}
-									loading={isSubmiting}
+									onClick={() => handlePaymentModal.open()}
 								>
 									Rent
 								</Button>
@@ -266,6 +269,92 @@ export default function DashboardLayout() {
 					)}
 				</div>
 			</Drawer>
+
+			<Modal
+				opened={isPaymentModalOpen}
+				onClose={handlePaymentModal.close}
+				title="Complete your payment"
+			>
+				<paymentFetcher.Form
+					method="post"
+					className="flex flex-col gap-4"
+					onSubmit={e => rentMedias(e)}
+				>
+					<input hidden name="userId" defaultValue={user.id} />
+					<NumberInput
+						label="Amount to pay"
+						name="amount"
+						icon="$"
+						defaultValue={totalRent}
+						readOnly
+						required
+					/>
+
+					<Select
+						name="paymentMethod"
+						label="Payment method"
+						clearable={false}
+						data={Object.values(PaymentMethod).map(method => ({
+							label: titleCase(method.replace(/_/g, ' ')),
+							value: method,
+						}))}
+					/>
+
+					<Input.Wrapper id={id} label="Credit card number" required>
+						<Input
+							id={id}
+							component={ReactInputMask}
+							mask="9999 9999 9999 9999"
+							placeholder="XXXX XXXX XXXX XXXX"
+							alwaysShowMask={false}
+						/>
+					</Input.Wrapper>
+
+					<div className="flex items-center gap-4">
+						<Input.Wrapper id={id + 'cvv'} label="CVV" required>
+							<Input
+								id={id + 'cvv'}
+								name="cvv"
+								component={ReactInputMask}
+								mask="999"
+								placeholder="XXX"
+								alwaysShowMask={false}
+							/>
+						</Input.Wrapper>
+
+						<DatePicker
+							name="expiryDate"
+							label="Expiry"
+							inputFormat="MM/YYYY"
+							clearable={false}
+							placeholder="MM/YYYY"
+							labelFormat="MM/YYYY"
+							required
+							minDate={new Date()}
+							initialLevel="year"
+							hideOutsideDates
+						/>
+					</div>
+
+					<div className="mt-8 flex items-center justify-end gap-4">
+						<Button
+							variant="light"
+							color="red"
+							onClick={handlePaymentModal.close}
+							disabled={isSubmittingPayment}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							loading={isSubmittingPayment}
+							loaderPosition="right"
+						>
+							Pay now
+						</Button>
+					</div>
+				</paymentFetcher.Form>
+			</Modal>
 		</>
 	)
 }

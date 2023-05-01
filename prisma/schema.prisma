@@ -39,6 +39,7 @@ model Transaction {
   amount        Float
   paid          Float         @default(0)
   paymentStatus PaymentStatus @default(UNPAID)
+  payment       Payment?
 
   media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   mediaId String @db.ObjectId
@@ -66,8 +67,10 @@ model Payment {
   method    PaymentMethod
   status    PaymentStatus
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String @db.ObjectId
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  transactionId String      @unique @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId        String      @db.ObjectId
 }
 
 enum PaymentStatus {

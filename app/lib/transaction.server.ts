@@ -59,7 +59,7 @@ export async function rentMedia({
 				},
 			},
 			amount: media.rentPerDay,
-			paymentStatus: PaymentStatus.UNPAID,
+			paymentStatus: PaymentStatus.PAID,
 			borrowedAt: new Date(),
 		},
 	})
@@ -207,6 +207,7 @@ export async function clearDues({
 			amount,
 			method: paymentMethod,
 			status: PaymentStatus.PAID,
+			transactionId: '',
 		},
 	})
 }

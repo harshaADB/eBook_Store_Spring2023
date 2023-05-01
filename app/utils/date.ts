@@ -12,7 +12,8 @@ export function dateDiffInDays(a: Date, b: Date) {
 		diff = diff * -1
 	}
 
-	return diff === 0 ? 1 : diff + 1
+	// return diff === 0 ? 1 : diff + 1
+	return diff
 }
 
 export function formatDate(date: Date | string) {
