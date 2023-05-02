@@ -16,6 +16,53 @@ async function seed() {
 		},
 	})
 
+	await prisma.category.createMany({
+		data: [
+			{
+				name: 'Action',
+			},
+			{
+				name: 'Sci-Fi',
+			},
+			{
+				name: 'Romance',
+			},
+			{
+				name: 'Horror',
+			},
+			{
+				name: 'Thriller',
+			},
+			{
+				name: 'Comedy',
+			},
+			{
+				name: 'Drama',
+			},
+			{
+				name: 'Fantasy',
+			},
+			{
+				name: 'Mystery',
+			},
+			{
+				name: 'Crime',
+			},
+			{
+				name: 'Adventure',
+			},
+			{
+				name: 'Biography',
+			},
+			{
+				name: 'History',
+			},
+			{
+				name: 'Poetry',
+			},
+		],
+	})
+
 	await prisma.user.create({
 		data: {
 			email: 'admin@app.com',

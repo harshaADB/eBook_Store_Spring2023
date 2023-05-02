@@ -73,6 +73,11 @@ model Payment {
   userId        String      @db.ObjectId
 }
 
+model Category {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+}
+
 enum PaymentStatus {
   PAID
   UNPAID

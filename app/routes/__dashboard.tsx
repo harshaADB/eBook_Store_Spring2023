@@ -24,6 +24,7 @@ import * as React from 'react'
 import {DatePicker} from '@mantine/dates'
 import ReactInputMask from 'react-input-mask'
 import {TrashIcon} from '@heroicons/react/24/solid'
+import {db} from '~/lib/prisma.server'
 
 export type DashboardLoaderData = SerializeFrom<typeof loader>
 export const loader = async ({request}: LoaderArgs) => {
@@ -50,6 +51,7 @@ export const loader = async ({request}: LoaderArgs) => {
 		return total + amountDue
 	}, 0)
 
+	const categories = await db.category.findMany({})
 	return json({
 		user,
 		allMedia,
@@ -58,6 +60,7 @@ export const loader = async ({request}: LoaderArgs) => {
 		previousPayments,
 		totalAmountDue,
 		totalAmount,
+		categories,
 		isAdmin: user.role === Role.ADMIN,
 	})
 }

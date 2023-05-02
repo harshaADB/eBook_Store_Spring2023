@@ -59,12 +59,14 @@ export const action: ActionFunction = async ({request}) => {
 
 export default function ManageMedia() {
 	const fetcher = useFetcher<ActionData>()
-	const {allMedia} = useDashboardData()
+	const {allMedia, categories} = useDashboardData()
 
 	const [media, setMedia] = React.useState<Media | null>(null)
 	const [mode, setMode] = React.useState<MODE>(MODE.edit)
 	const [isModalOpen, {open: openModal, close: closeModal}] =
 		useDisclosure(false)
+
+	const [isCategoryModalOpen, handleCategoryModal] = useDisclosure(false)
 
 	const isSubmitting = fetcher.state !== 'idle'
 
@@ -76,6 +78,7 @@ export default function ManageMedia() {
 		if (fetcher.data?.success) {
 			setMedia(null)
 			closeModal()
+			handleCategoryModal.close()
 		}
 	}, [closeModal, fetcher.data?.success, fetcher.state])
 
@@ -92,7 +95,16 @@ export default function ManageMedia() {
 						</p>
 					</div>
 
-					<div>
+					<div className="flex items-center gap-4">
+						<Button
+							loading={isSubmitting}
+							loaderPosition="left"
+							onClick={() => handleCategoryModal.open()}
+						>
+							<PlusIcon className="h-4 w-4" />
+							<span className="ml-2">Add category</span>
+						</Button>
+
 						<Button
 							loading={isSubmitting}
 							loaderPosition="left"
@@ -248,24 +260,10 @@ export default function ManageMedia() {
 							name="category"
 							label="Category"
 							required
-							data={[
-								'Music',
-								'Action',
-								'Sci-Fi',
-								'Documentary',
-								'Rock',
-								'Fantasy',
-								'Adventure',
-								'Contemporary',
-								'Dystopian',
-								'Mystery',
-								'Horror',
-								'Thriller',
-								'Paranormal',
-								'Historical fiction',
-								'Science Fiction',
-								'Childrens',
-							]}
+							data={categories.map(category => ({
+								value: category.name,
+								label: titleCase(category.name),
+							}))}
 							defaultValue={media?.category}
 							placeholder="Select categories"
 							searchable
@@ -290,6 +288,42 @@ export default function ManageMedia() {
 								loaderPosition="right"
 							>
 								Register
+							</Button>
+						</div>
+					</fieldset>
+				</fetcher.Form>
+			</Modal>
+
+			<Modal
+				opened={isCategoryModalOpen}
+				onClose={() => handleCategoryModal.close()}
+				title="Add category"
+			>
+				<fetcher.Form method="post" replace action="/api/add-category">
+					<fieldset disabled={isSubmitting} className="flex flex-col gap-4">
+						<TextInput
+							name="name"
+							label="Name"
+							error={fetcher.data?.fieldErrors?.title}
+							required
+						/>
+
+						<div className="flex items-center justify-end gap-4 mt-1">
+							<Button
+								variant="subtle"
+								disabled={isSubmitting}
+								onClick={() => handleCategoryModal.close()}
+								color="red"
+							>
+								Cancel
+							</Button>
+
+							<Button
+								type="submit"
+								loading={isSubmitting}
+								loaderPosition="right"
+							>
+								Create
 							</Button>
 						</div>
 					</fieldset>
