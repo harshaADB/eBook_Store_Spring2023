@@ -95,8 +95,7 @@ export const action: ActionFunction = async ({request}) => {
 
 export default function Dashboard() {
 	const id = React.useId()
-	const {user} = useLoaderData<typeof loader>()
-	const {rentedMedia, returnedMedia, totalAmountDue} = useDashboardData()
+	const {rentedMedia, totalAmountDue} = useDashboardData()
 	const clearDueFetcher = useFetcher()
 
 	const [isPaymentModalOpen, handlePaymentModal] = useDisclosure(false, {
