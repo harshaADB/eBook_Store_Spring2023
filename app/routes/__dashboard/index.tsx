@@ -2,20 +2,21 @@ import {LinkIcon, PlayCircleIcon, PlusIcon} from '@heroicons/react/20/solid'
 import {Badge, Button, Input, Modal, NumberInput, Select} from '@mantine/core'
 import {DatePicker} from '@mantine/dates'
 import {useDisclosure} from '@mantine/hooks'
-import type {Transaction} from '@prisma/client'
+import {PaymentStatus, Transaction} from '@prisma/client'
 import {PaymentMethod, Role} from '@prisma/client'
 import type {ActionFunction, LoaderArgs} from '@remix-run/node'
 import {json, redirect} from '@remix-run/node'
 import {Link, useFetcher, useLoaderData} from '@remix-run/react'
 import * as React from 'react'
 import ReactInputMask from 'react-input-mask'
-import {requireUser} from '~/lib/session.server'
+import {requireUser, requireUserId} from '~/lib/session.server'
 import {clearDues, returnMedia} from '~/lib/transaction.server'
 import {dateDiffInDays, formatDate} from '~/utils/date'
 import {useDashboardData} from '~/utils/hooks'
 import {formatCurrency} from '~/utils/misc'
 import {titleCase} from '~/utils/string'
 import type {DashboardLoaderData} from '../__dashboard'
+import {db} from '~/lib/prisma.server'
 
 export const loader = async ({request}: LoaderArgs) => {
 	const user = await requireUser(request)
@@ -28,6 +29,7 @@ export const loader = async ({request}: LoaderArgs) => {
 }
 
 export const action: ActionFunction = async ({request}) => {
+	const userId = await requireUserId(request)
 	const formData = await request.formData()
 
 	const intent = formData.get('intent')?.toString()
@@ -50,20 +52,39 @@ export const action: ActionFunction = async ({request}) => {
 				})
 		}
 
-		case 'clearDue': {
-			const userId = formData.get('userId')?.toString()
+		case 'clear-due': {
+			const transactionId = formData.get('transactionId')?.toString()
 			const amount = formData.get('amount')?.toString()
-			const paymentMethod = formData.get('paymentMethod')?.toString()
 
-			if (!amount || !paymentMethod || !userId) {
+			if (!transactionId || !amount) {
 				return null
 			}
 
-			await clearDues({
-				userId,
-				amount: Number(amount),
-				paymentMethod: paymentMethod as PaymentMethod,
+			await db.transaction.update({
+				where: {
+					id: transactionId,
+				},
+				data: {
+					paymentStatus: PaymentStatus.PAID,
+					paid: Number(amount),
+					returnedAt: new Date(),
+					link: {
+						update: {
+							expired: true,
+						},
+					},
+					amount: Number(amount),
+					payment: {
+						update: {
+							amount: Number(amount),
+							method: PaymentMethod.CREDIT_CARD,
+							status: PaymentStatus.PAID,
+							userId,
+						},
+					},
+				},
 			})
+
 			return redirect('/payment-history')
 		}
 
@@ -78,10 +99,32 @@ export default function Dashboard() {
 	const {rentedMedia, returnedMedia, totalAmountDue} = useDashboardData()
 	const clearDueFetcher = useFetcher()
 
-	const [
-		isPaymentModalOpen,
-		{open: openPaymentModal, close: closePaymentModal},
-	] = useDisclosure(false)
+	const [isPaymentModalOpen, handlePaymentModal] = useDisclosure(false, {
+		onClose: () => {
+			setAmount(0)
+			setSelectedTransactionId(null)
+		},
+	})
+	const [selectedTransactionId, setSelectedTransactionId] = React.useState<
+		string | null
+	>(null)
+
+	const selectedTransaction = React.useMemo(() => {
+		if (!selectedTransactionId) {
+			return null
+		}
+
+		const transaction = rentedMedia.find(
+			transaction => transaction.id === selectedTransactionId
+		)
+
+		if (!transaction) {
+			return null
+		}
+
+		return transaction
+	}, [selectedTransactionId, rentedMedia])
+
 	const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(
 		PaymentMethod.CREDIT_CARD
 	)
@@ -127,16 +170,28 @@ export default function Dashboard() {
 			}))
 		}
 
-		if (Object.values(errors).some(error => error !== '') || !amount) {
+		console.log({
+			selectedTransactionId,
+			cardCvv,
+			cardExpiry,
+			cardNumber,
+			amount,
+		})
+
+		if (
+			Object.values(errors).some(error => error !== '') ||
+			amount === null ||
+			amount === undefined ||
+			!selectedTransactionId
+		) {
 			return
 		}
 
 		clearDueFetcher.submit(
 			{
-				intent: 'clearDue',
-				userId: user.id,
+				intent: 'clear-due',
+				transactionId: selectedTransactionId,
 				amount: amount.toString(),
-				paymentMethod,
 			},
 			{
 				method: 'post',
@@ -159,126 +214,111 @@ export default function Dashboard() {
 					<ul className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4 mt-3">
 						{rentedMedia.length > 0 ? (
 							<>
-								{rentedMedia.map(media => (
-									<MediaCard key={media.id} media={media} />
-								))}
+								{rentedMedia.map(transaction => {
+									const noOfDays =
+										dateDiffInDays(
+											new Date(),
+											new Date(transaction.borrowedAt)
+										) - 1
+									const rentAmount = Math.max(
+										0,
+										transaction.media.rentPerDay * noOfDays
+									)
+
+									return (
+										<li
+											className="col-span-1 flex flex-col text-left bg-white rounded-lg shadow divide-y divide-gray-200 border border-gray-100/50"
+											key={transaction.id}
+										>
+											<div className="flex-1 flex flex-col px-8 py-4 gap-6">
+												<h3 className="text-gray-900 text-base font-semibold">
+													{transaction.media.title}
+												</h3>
+
+												<div className=" flex-grow flex flex-col justify-between gap-1 divide-y">
+													<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
+														<span className="text-gray-500 text-sm">Type</span>
+														<Badge color="blue" radius="md" px={4}>
+															{transaction.media.type}
+														</Badge>
+													</div>
+
+													<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
+														<span className="text-gray-500 text-sm">
+															Rent/day
+														</span>
+														<Badge color="blue" radius="md" px={4}>
+															{formatCurrency(transaction.media.rentPerDay)}
+														</Badge>
+													</div>
+
+													<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
+														<span className="text-gray-500 text-sm">
+															Overdue
+														</span>
+														<Badge color="red" radius="md" px={4}>
+															{formatCurrency(rentAmount)}
+														</Badge>
+													</div>
+
+													<Link
+														to={`/share/${transaction.link?.token}`}
+														className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5"
+													>
+														<span className="text-gray-500 text-sm">Link</span>
+														<div className="flex items-center gap-2">
+															<span>View media</span>
+															<LinkIcon className="w-5 h-5" />
+														</div>
+													</Link>
+												</div>
+											</div>
+
+											<div>
+												<div className="-mt-px flex divide-x divide-gray-200">
+													<button
+														disabled={isSubmitting}
+														onClick={() => {
+															if (rentAmount === 0) {
+																clearDueFetcher.submit(
+																	{
+																		intent: 'clear-due',
+																		transactionId: transaction.id,
+																		amount: '0',
+																	},
+																	{
+																		method: 'post',
+																		replace: true,
+																	}
+																)
+
+																return
+															}
+
+															setAmount(rentAmount)
+															setSelectedTransactionId(transaction.id)
+															handlePaymentModal.open()
+														}}
+														className="relative w-0 flex-1 inline-flex items-center justify-center py-4 text-sm text-gray-700 font-medium border border-transparent rounded-br-lg hover:text-gray-500 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed"
+													>
+														<span className="ml-3">Return</span>
+													</button>
+												</div>
+											</div>
+										</li>
+									)
+								})}
 							</>
 						) : (
 							<EmptyBorrowState />
 						)}
 					</ul>
 				</div>
-
-				{/* Previous Borrowed Media */}
-				{returnedMedia.length > 0 ? (
-					<div className="px-4 sm:px-6 lg:px-8 sm:col-span-2 xl:col-span-4">
-						<div className="sm:flex sm:items-center sm:justify-between">
-							<h2 className="text-gray-500 text-xs font-medium uppercase tracking-wide">
-								Previous Media
-							</h2>
-
-							<Button
-								size="sm"
-								variant="subtle"
-								color="red"
-								loaderPosition="right"
-								loading={isSubmitting}
-								onClick={openPaymentModal}
-								disabled={totalAmountDue === 0}
-							>
-								Clear dues
-							</Button>
-						</div>
-
-						<div className="-mx-4 mt-2 flex flex-col sm:-mx-6 md:mx-0">
-							<table className="min-w-full divide-y divide-gray-300">
-								<thead>
-									<tr>
-										<th
-											scope="col"
-											className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 md:pl-0"
-										>
-											Title
-										</th>
-										<th
-											scope="col"
-											className="hidden py-3.5 px-3 text-right text-sm font-semibold text-gray-900 sm:table-cell"
-										>
-											Type
-										</th>
-										<th
-											scope="col"
-											className="hidden py-3.5 px-3 text-right text-sm font-semibold text-gray-900 sm:table-cell"
-										>
-											Borrow Date
-										</th>
-										<th
-											scope="col"
-											className="hidden py-3.5 px-3 text-right text-sm font-semibold text-gray-900 sm:table-cell"
-										>
-											Return Date
-										</th>
-										<th
-											scope="col"
-											className="py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 sm:pr-6 md:pr-0"
-										>
-											Rent Amount
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									{returnedMedia.map(media => (
-										<tr key={media.id} className="border-b border-gray-200">
-											<td className="py-4 pl-4 pr-3 text-sm sm:pl-6 md:pl-0">
-												<div className="font-medium text-gray-900">
-													{media.media.title}
-												</div>
-												<div className="mt-0.5 text-gray-500 sm:hidden">
-													{media.media.type}
-												</div>
-											</td>
-
-											<td className="hidden py-4 px-3 text-right text-sm text-gray-500 sm:table-cell">
-												{media.media.type}
-											</td>
-
-											<td className="hidden py-4 px-3 text-right text-sm text-gray-500 sm:table-cell">
-												{formatDate(media.borrowedAt)}
-											</td>
-
-											<td className="hidden py-4 px-3 text-right text-sm text-gray-500 sm:table-cell">
-												{formatDate(media.returnedAt!)}
-											</td>
-
-											<td className="hidden py-4 px-3 text-right text-sm text-gray-500 sm:table-cell">
-												${media.amount.toFixed(2)}
-											</td>
-										</tr>
-									))}
-								</tbody>
-								<tfoot>
-									<tr>
-										<th
-											scope="row"
-											colSpan={3}
-											className="hidden pl-6 pr-3 pt-4 text-right text-sm font-semibold text-gray-900 sm:table-cell md:pl-0"
-										></th>
-
-										<td className="pl-3 pr-4 pt-4 text-right text-sm  text-gray-900 sm:pr-6 md:pr-0">
-											<span className="font-semibold">Total Due:</span>{' '}
-											<span>{formatCurrency(totalAmountDue)}</span>
-										</td>
-									</tr>
-								</tfoot>
-							</table>
-						</div>
-					</div>
-				) : null}
 			</div>
 
 			<Modal
 				opened={isPaymentModalOpen}
-				onClose={closePaymentModal}
+				onClose={handlePaymentModal.close}
 				title="Complete your payment"
 			>
 				<div className="flex flex-col gap-4">
@@ -288,8 +328,7 @@ export default function Dashboard() {
 						value={amount}
 						onChange={setAmount}
 						icon="$"
-						max={totalAmountDue}
-						min={1}
+						readOnly
 						required
 					/>
 
@@ -361,7 +400,7 @@ export default function Dashboard() {
 						<Button
 							variant="light"
 							color="red"
-							onClick={closePaymentModal}
+							onClick={handlePaymentModal.close}
 							disabled={isSubmitting}
 						>
 							Cancel
@@ -377,87 +416,6 @@ export default function Dashboard() {
 				</div>
 			</Modal>
 		</>
-	)
-}
-
-function MediaCard({
-	media,
-}: {
-	media: DashboardLoaderData['rentedMedia'][number]
-}) {
-	const fetcher = useFetcher()
-	const isSubmitting = fetcher.state !== 'idle'
-
-	const returnMedia = (transactionId: Transaction['id']) => {
-		return fetcher.submit(
-			{
-				intent: 'returnMedia',
-				transactionId,
-			},
-			{
-				method: 'post',
-				replace: true,
-			}
-		)
-	}
-
-	const noOfDays = dateDiffInDays(new Date(), new Date(media.borrowedAt)) - 1
-	const rentAmount = Math.max(0, media.media.rentPerDay * noOfDays)
-
-	return (
-		<li className="col-span-1 flex flex-col text-left bg-white rounded-lg shadow divide-y divide-gray-200 border border-gray-100/50">
-			<div className="flex-1 flex flex-col px-8 py-4 gap-6">
-				<h3 className="text-gray-900 text-base font-semibold">
-					{media.media.title}
-				</h3>
-
-				<div className=" flex-grow flex flex-col justify-between gap-1 divide-y">
-					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
-						<span className="text-gray-500 text-sm">Type</span>
-						<Badge color="blue" radius="md" px={4}>
-							{media.media.type}
-						</Badge>
-					</div>
-
-					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
-						<span className="text-gray-500 text-sm">Rent/day</span>
-						<Badge color="blue" radius="md" px={4}>
-							${media.media.rentPerDay.toFixed(2)}
-						</Badge>
-					</div>
-
-					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
-						<span className="text-gray-500 text-sm">Overdue</span>
-						<Badge color="red" radius="md" px={4}>
-							{formatCurrency(rentAmount)}
-						</Badge>
-					</div>
-
-					<Link
-						to={`/share/${media.link?.token}`}
-						className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5"
-					>
-						<span className="text-gray-500 text-sm">Link</span>
-						<div className="flex items-center gap-2">
-							<span>View media</span>
-							<LinkIcon className="w-5 h-5" />
-						</div>
-					</Link>
-				</div>
-			</div>
-
-			<div>
-				<div className="-mt-px flex divide-x divide-gray-200">
-					<button
-						disabled={isSubmitting}
-						onClick={() => returnMedia(media.id)}
-						className="relative w-0 flex-1 inline-flex items-center justify-center py-4 text-sm text-gray-700 font-medium border border-transparent rounded-br-lg hover:text-gray-500 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed"
-					>
-						<span className="ml-3">Return</span>
-					</button>
-				</div>
-			</div>
-		</li>
 	)
 }
 
