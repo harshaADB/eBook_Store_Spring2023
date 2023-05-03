@@ -401,6 +401,9 @@ function MediaCard({
 		)
 	}
 
+	const noOfDays = dateDiffInDays(new Date(), new Date(media.borrowedAt)) - 1
+	const rentAmount = Math.max(0, media.media.rentPerDay * noOfDays)
+
 	return (
 		<li className="col-span-1 flex flex-col text-left bg-white rounded-lg shadow divide-y divide-gray-200 border border-gray-100/50">
 			<div className="flex-1 flex flex-col px-8 py-4 gap-6">
@@ -424,13 +427,9 @@ function MediaCard({
 					</div>
 
 					<div className="text-gray-500 text-sm flex items-center gap-1 justify-between py-1.5">
-						<span className="text-gray-500 text-sm">Total amount</span>
+						<span className="text-gray-500 text-sm">Overdue</span>
 						<Badge color="red" radius="md" px={4}>
-							$
-							{Math.abs(
-								dateDiffInDays(new Date(), new Date(media.borrowedAt)) *
-									media.media.rentPerDay
-							)}
+							{formatCurrency(rentAmount)}
 						</Badge>
 					</div>
 

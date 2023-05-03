@@ -46,8 +46,7 @@ export const loader = async ({request}: LoaderArgs) => {
 	}, 0)
 
 	const totalAmountDue = returnedMedia.reduce((total, transaction) => {
-		const isDue = transaction.paymentStatus === PaymentStatus.UNPAID
-		const amountDue = isDue ? transaction.amount - transaction.paid : 0
+		const amountDue = Math.max(0, transaction.amount - transaction.paid)
 		return total + amountDue
 	}, 0)
 

@@ -123,9 +123,13 @@ export async function returnMedia(transactionId: Transaction['id']) {
 		},
 	})
 
-	const rentAmount =
-		dateDiffInDays(new Date(transaction.borrowedAt), new Date()) *
-		transaction.media.rentPerDay
+	const noOfDays = dateDiffInDays(
+		new Date(transaction.borrowedAt),
+		new Date(new Date())
+	)
+
+	const _rentAmount = (noOfDays - 1) * transaction.media.rentPerDay
+	const rentAmount = _rentAmount < 0 ? 0 : _rentAmount
 
 	return db.transaction.update({
 		where: {
@@ -160,13 +164,11 @@ export async function clearDues({
 		throw new Error(`No transaction found`)
 	}
 
-	const transactionIdsWithDues = allTransaction
-		.filter(t => t.paymentStatus === PaymentStatus.UNPAID)
-		.map(transaction => ({
-			id: transaction.id,
-			amount: transaction.amount,
-			paid: transaction.paid,
-		}))
+	const transactionIdsWithDues = allTransaction.map(transaction => ({
+		id: transaction.id,
+		amount: transaction.amount,
+		paid: transaction.paid,
+	}))
 
 	let credit = amount
 	for (const transaction of transactionIdsWithDues) {
@@ -182,6 +184,14 @@ export async function clearDues({
 				data: {
 					paymentStatus: PaymentStatus.PAID,
 					paid: credit,
+					payment: {
+						update: {
+							amount: credit,
+							method: paymentMethod,
+							status: PaymentStatus.PAID,
+							userId,
+						},
+					},
 				},
 			})
 
@@ -195,19 +205,19 @@ export async function clearDues({
 			},
 			data: {
 				paid: credit,
+				payment: {
+					update: {
+						amount: credit,
+						method: paymentMethod,
+						status: PaymentStatus.PAID,
+						userId,
+					},
+				},
 			},
 		})
 
 		credit = 0
 	}
 
-	return db.payment.create({
-		data: {
-			userId,
-			amount,
-			method: paymentMethod,
-			status: PaymentStatus.PAID,
-			transactionId: '',
-		},
-	})
+	return true
 }
